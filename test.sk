@@ -1,7 +1,7 @@
 make num a = 10;
 make num b;
 make text y = "hello";
-make text c="hello"+"world";
+make text c="hello"+"world"+"simran";
 make num p=1+2+4;
 show(p);
 show(c);

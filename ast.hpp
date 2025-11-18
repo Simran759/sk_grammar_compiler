@@ -4,7 +4,8 @@
 #include <vector>
 #include <memory>
 
-namespace SK {
+namespace SK 
+{
 
 class CodeGenerator;
 
@@ -124,40 +125,9 @@ public:
 };
 
 
-class ReturnStmtNode : public StmtNode {
-public:
-    std::unique_ptr<ExprNode> expr;
-    explicit ReturnStmtNode(std::unique_ptr<ExprNode> e) : expr(std::move(e)) {}
-    void generate_code(CodeGenerator& generator) const override;
-};
-
-
-class FunctionDefNode : public StmtNode {
-public:
-    std::string name;
-    std::vector<std::pair<std::string, std::string>> params; 
-    StmtList body;
-    FunctionDefNode(const std::string& n,
-                    std::vector<std::pair<std::string, std::string>> par,
-                    StmtList b)
-        : name(n), params(std::move(par)), body(std::move(b)) {}
-    void generate_code(CodeGenerator& generator) const override;
-};
-
-class CallNode : public ExprNode {
-public:
-    std::string name;
-    std::vector<std::unique_ptr<ExprNode>> args;
-    CallNode(const std::string& n, std::vector<std::unique_ptr<ExprNode>> a)
-        : name(n), args(std::move(a)) {}
-    void generate_code(CodeGenerator& generator) const override;
-};
-
-
 class ProgramNode : public ASTNode {
 public:
     StmtList statements;
-    std::vector<std::unique_ptr<FunctionDefNode>> functions;
     void generate_code(CodeGenerator& generator) const override;
 };
 

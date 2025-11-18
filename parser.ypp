@@ -20,27 +20,21 @@
     SK::StmtNode* stmt_node;
     SK::ConditionNode* condition_node;
     SK::StmtList* stmt_list;
-    SK::FunctionDefNode* function_node;
-    std::vector<std::pair<std::string, std::string>>* param_list_vec;
     std::vector<std::unique_ptr<SK::ExprNode>>* expr_list_vec;
-    std::vector<std::unique_ptr<SK::FunctionDefNode>>* func_def_list_val; 
 }
 
 %token <int_val> NUMBER
 %token <str_val> ID TYPE STRING
-%token MAKE SHOW CHECK OTHERWISE DURING DO GIVE ASK USING
+%token MAKE SHOW CHECK OTHERWISE DURING DO ASK
 %token LPAREN RPAREN LBRACE RBRACE SEMI COMMA ASSIGN
 %token PLUS MINUS MUL DIV
 %token EQ NE GT LT GE LE
 
 %type <stmt_list> stmt_list
-%type <stmt_node> stmt decl_stmt assign_stmt output_stmt if_stmt while_stmt return_stmt 
+%type <stmt_node> stmt decl_stmt assign_stmt output_stmt if_stmt while_stmt
 %type <expr_node> expr term
-%type <expr_list_vec> expr_list arg_list_opt arg_list
+%type <expr_list_vec> expr_list
 %type <condition_node> condition
-%type <function_node> func_def
-%type <param_list_vec> param_list param_list_opt
-%type <func_def_list_val> func_def_list
 
 
 %destructor { delete $$; } <str_val>
@@ -51,37 +45,11 @@
 %%
 
 program:
-    func_def_list stmt_list {
+    stmt_list {
         ast_root = new SK::ProgramNode();
-        ast_root->statements = std::move(*$2);
-        ast_root->functions = std::move(*$1); // Add this to your ProgramNode class
-        delete $2;
+        ast_root->statements = std::move(*$1);
         delete $1;
     }
-;
-
-func_def_list:
-    %empty { $$ = new std::vector<std::unique_ptr<SK::FunctionDefNode>>(); }
-    | func_def_list func_def {
-        $1->push_back(std::unique_ptr<SK::FunctionDefNode>($2)); $$ = $1;
-    }
-;
-
-func_def:
-    USING ID LPAREN param_list_opt RPAREN LBRACE stmt_list RBRACE {
-        $$ = new SK::FunctionDefNode(*$2, std::move(*$4), std::move(*$7));
-        delete $2; delete $4; delete $7;
-    }
-;
-
-param_list_opt:
-    %empty { $$ = new std::vector<std::pair<std::string, std::string>>(); }
-    | param_list { $$ = $1; }
-;
-
-param_list:
-    TYPE ID { $$ = new std::vector<std::pair<std::string, std::string>>(); $$->push_back({*$1, *$2}); delete $1; delete $2; }
-    | param_list COMMA TYPE ID { $1->push_back({*$3, *$4}); delete $3; delete $4; $$ = $1; }
 ;
 
 stmt_list:
@@ -99,7 +67,6 @@ stmt:
     | output_stmt
     | if_stmt
     | while_stmt
-    | return_stmt
 ;
 
 decl_stmt:
@@ -131,10 +98,6 @@ while_stmt:
     DURING LPAREN condition RPAREN LBRACE DO stmt_list RBRACE { $$ = new SK::WhileStmtNode(std::unique_ptr<SK::ConditionNode>($3), std::move(*$7)); delete $7; }
 ;
 
-return_stmt:
-    GIVE expr SEMI { $$ = new SK::ReturnStmtNode(std::unique_ptr<SK::ExprNode>($2)); }
-;
-
 condition:
       expr GT expr  { $$ = new SK::ConditionNode(std::unique_ptr<SK::ExprNode>($1), SK::Parser::token::GT, std::unique_ptr<SK::ExprNode>($3)); }
     | expr LT expr  { $$ = new SK::ConditionNode(std::unique_ptr<SK::ExprNode>($1), SK::Parser::token::LT, std::unique_ptr<SK::ExprNode>($3)); }
@@ -156,20 +119,7 @@ term:
     NUMBER { $$ = new SK::NumberNode($1); }
     | STRING { $$ = new SK::StringNode(*$1); delete $1; }
     | ID { $$ = new SK::IdNode(*$1); delete $1; }
-    | ID LPAREN arg_list_opt RPAREN {
-        $$ = new SK::CallNode(*$1, std::move(*$3)); delete $1; delete $3;
-    }
     | LPAREN expr RPAREN { $$ = $2; }
-;
-
-arg_list_opt:
-    %empty { $$ = new std::vector<std::unique_ptr<SK::ExprNode>>(); }
-    | arg_list { $$ = $1; }
-;
-
-arg_list:
-    expr { $$ = new std::vector<std::unique_ptr<SK::ExprNode>>(); $$->push_back(std::unique_ptr<SK::ExprNode>($1)); }
-    | arg_list COMMA expr { $1->push_back(std::unique_ptr<SK::ExprNode>($3)); $$ = $1; }
 ;
 
 %%

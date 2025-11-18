@@ -2,19 +2,7 @@
 #include "parser.tab.hpp" 
 #include <stdexcept>
 
-
 using namespace SK;
-class DeclStmtNode : public StmtNode {
-public:
-    std::string type;
-    std::string id_name;
-    std::unique_ptr<ExprNode> expr;
-
-    DeclStmtNode(std::string t, std::string id, std::unique_ptr<ExprNode> e)
-        : type(std::move(t)), id_name(std::move(id)), expr(std::move(e)) {}
-
-    void generate_code(CodeGenerator& generator) const override;
-};
 std::string CodeGenerator::storeConcatString(const std::string& left, const std::string& right) {
     std::string new_label = "S" + std::to_string(string_literal_count++);
    
@@ -25,8 +13,8 @@ std::string CodeGenerator::storeConcatString(const std::string& left, const std:
 }
 
 std::string CodeGenerator::getExprType(const ExprNode* expr) const {
-    if (auto numNode = dynamic_cast<const NumberNode*>(expr)) return "num";
-    if (auto strNode = dynamic_cast<const StringNode*>(expr)) return "text";
+    if (dynamic_cast<const NumberNode*>(expr)) return "num";
+    if (dynamic_cast<const StringNode*>(expr)) return "text";
     if (auto idNode = dynamic_cast<const IdNode*>(expr)) {
         if (symboltable.count(idNode->name)) return symboltable.at(idNode->name).type;
     }
@@ -48,14 +36,6 @@ std::string CodeGenerator::getExprType(const ExprNode* expr) const {
              binOpNode->op == SK::Parser::token::DIV) && left=="num" && right=="num")
             return "num";
         return "unknown";
-    }
-    if (auto callNode = dynamic_cast<const CallNode*>(expr)) {
-        
-        auto it = functionTypeTable.find(callNode->name);
-        if (it != functionTypeTable.end()) {
-            return it->second; 
-        }
-        return "unknown"; 
     }
     return "unknown";
 }
@@ -122,7 +102,7 @@ void SK::AssignStmtNode::generate_code(CodeGenerator& gen) const { gen.visit(thi
 void SK::OutputStmtNode::generate_code(CodeGenerator& gen) const { gen.visit(this); }
 void SK::IfStmtNode::generate_code(CodeGenerator& gen) const { gen.visit(this); }
 void SK::WhileStmtNode::generate_code(CodeGenerator& gen) const { gen.visit(this); } 
-void SK::ReturnStmtNode::generate_code(CodeGenerator& gen) const { gen.visit(this); } 
+
 
 
 
@@ -208,8 +188,8 @@ void CodeGenerator::visit(const SK::DeclStmtNode* node) {
     if (symboltable.count(node->id_name))
         throw std::runtime_error("Redefinition...");
     
-    stackindex += 8;
-    symboltable[node->id_name] = VarInfo{stackindex, node->type};
+    stack_index += 8;
+    symboltable[node->id_name] = VarInfo{stack_index, node->type};
 
     if (node->expr) {
         std::string exprType = getExprType(node->expr.get());
@@ -225,7 +205,7 @@ if (node->type != exprType) {
             text_values[node->id_name] = getStringValue(node->expr.get());
         }
         node->expr->generate_code(*this);
-        out_file << "    mov [rbp - " << stackindex << "], rax ; Declare " << node->id_name << "\n";
+        out_file << "    mov [rbp - " << stack_index << "], rax ; Declare " << node->id_name << "\n";
     }
 }
 
@@ -352,66 +332,6 @@ void CodeGenerator::visit(const SK::WhileStmtNode* node) {
     out_file << loop_end_label << ":\n";
 }
 
-
-
-void CodeGenerator::visit(const SK::ReturnStmtNode* node) {
-    node->expr->generate_code(*this);
-   
-    out_file << "    ret\n";
-}
-
 void ProgramNode::generate_code(CodeGenerator& gen) const {
-    for (const auto& func : functions) func->generate_code(gen);
     for (const auto& stmt : statements) stmt->generate_code(gen);
-}
-
-void FunctionDefNode::generate_code(CodeGenerator& gen) const {
-    gen.visit(this);
-}
-
-void CodeGenerator::visit(const FunctionDefNode* node) {
-    
-    out_file << node->name << ":\n";
-    out_file << "    push rbp\n";
-    out_file << "    mov rbp, rsp\n";
-   
-    std::map<std::string, VarInfo> local_symboltable;
-    int param_offset = 8;
-    for (const auto& param : node->params) {
-        local_symboltable[param.second] = VarInfo{param_offset, param.first};
-        param_offset += 8;
-    }
-    auto saved_symboltable = symboltable;
-    symboltable = local_symboltable;
-
-    
-    functionTypeTable[node->name] = "num";
-
-    
-    for (const auto& stmt : node->body) stmt->generate_code(*this);
-
-    symboltable = saved_symboltable;
-    out_file << "    pop rbp\n";
-    out_file << "    ret\n";
-}
-
-
-void CallNode::generate_code(CodeGenerator& gen) const {
-    gen.visit(this);
-}
-
-
-void CodeGenerator::visit(const CallNode* node) {
-    
-    if (functionTypeTable.find(node->name) == functionTypeTable.end()) {
-        throw std::runtime_error("Semantic Error: Function '" + node->name + "' is called but not defined.");
-    }
-
-    
-    node->args[0]->generate_code(*this);
-    out_file << "    mov rdi, rax\n";
-    node->args[1]->generate_code(*this);
-    out_file << "    mov rsi, rax\n";
-    out_file << "    call " << node->name << "\n";
-   
 }

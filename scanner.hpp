@@ -10,7 +10,6 @@ class Parser;
 }
 
 namespace SK {
-
 class SKScanner : public yyFlexLexer {
 public:
     SKScanner(std::istream* in) : yyFlexLexer(in) {}

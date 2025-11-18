@@ -28,8 +28,6 @@ int yylex(void* yylval_ptr);
 "otherwise"           { return SK::Parser::token::OTHERWISE; }
 "during"              { return SK::Parser::token::DURING; }
 "do"                  { return SK::Parser::token::DO; }
-"using"               { return SK::Parser::token::USING; }
-"give"                { return SK::Parser::token::GIVE; }
 "ask"                 { return SK::Parser::token::ASK; }
 \"[^"]*\"             { yylval.str_val = new std::string(yytext + 1, strlen(yytext) - 2); return SK::Parser::token::STRING; }
 

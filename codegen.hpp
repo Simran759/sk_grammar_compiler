@@ -10,21 +10,16 @@ namespace SK {
 class CodeGenerator {
 private:
     std::ofstream out_file;
-  
-    int stack_index = 0;
     int label_count = 0;
     int string_literal_count = 0;
+    int stack_index = 0;
 struct VarInfo {
     int offset;
     std::string type;
 };
 std::map<std::string, VarInfo> symboltable;
 std::map<std::string, std::string> text_values;
-std::map<std::string, std::string> functionTypeTable; 
-
-
-int stackindex = 0;
-    std::string new_label();
+std::string new_label();
 
 public:
     std::string getExprType(const ExprNode* expr) const ;
@@ -45,12 +40,6 @@ public:
     void visit(const SK::ConditionNode* node);
     void visit(const SK::IfStmtNode* node);      
     void visit(const SK::WhileStmtNode* node);
-    void visit(const SK::ReturnStmtNode* node);
-
-  
-    void visit(const SK::FunctionDefNode* node);
-    void visit(const SK::CallNode* node);
-    
 
 };
 } 

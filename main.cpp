@@ -24,8 +24,6 @@ const char* getTokenName(int token) {
         case SK::Parser::token::OTHERWISE: return "OTHERWISE";
         case SK::Parser::token::DURING: return "DURING";
         case SK::Parser::token::DO: return "DO";
-        case SK::Parser::token::USING: return "USING";
-        case SK::Parser::token::GIVE: return "GIVE";
         case SK::Parser::token::ASK: return "ASK";
         case SK::Parser::token::LPAREN: return "LPAREN";
         case SK::Parser::token::RPAREN: return "RPAREN";
@@ -90,17 +88,8 @@ void printASTNode(const SK::ASTNode* node, const std::string& prefix) {
     
     if (auto n = dynamic_cast<const SK::ProgramNode*>(node)) {
         std::cout << prefix << "ProgramNode" << std::endl;
-        std::string funcPrefix = prefix + "├── Functions (" + std::to_string(n->functions.size()) + "):";
         std::string stmtPrefix = prefix + "└── Statements (" + std::to_string(n->statements.size()) + "):";
 
-        if (n->functions.empty()) {
-            funcPrefix = prefix + "├── Functions (0)";
-        }
-        std::cout << funcPrefix << std::endl;
-        for (const auto& func : n->functions) {
-            printASTNode(func.get(), prefix + "│   ");
-        }
-        
         if (n->statements.empty()) {
             stmtPrefix = prefix + "└── Statements (0)";
         }
@@ -137,34 +126,18 @@ void printASTNode(const SK::ASTNode* node, const std::string& prefix) {
         printASTNode(n->condition.get(), prefix + "│   ");
         std::cout << prefix << "└── Body:" << std::endl;
         printStatementList(n->body, prefix + "    ");
-    } else if (auto n = dynamic_cast<const SK::ReturnStmtNode*>(node)) {
-        std::cout << prefix << "ReturnStmtNode" << std::endl;
-        std::cout << prefix << "└── Expr:" << std::endl;
-        printASTNode(n->expr.get(), prefix + "    ");
-    } else if (auto n = dynamic_cast<const SK::FunctionDefNode*>(node)) {
-        std::cout << prefix << "FunctionDefNode (Name: " << n->name << ")" << std::endl;
-        std::cout << prefix << "├── Params:" << std::endl;
-        for(const auto& p : n->params) {
-            std::cout << prefix << "│   " << "Param (Type: " << p.first << ", ID: " << p.second << ")" << std::endl;
-        }
+    } else if (auto n = dynamic_cast<const SK::WhileStmtNode*>(node)) {
+        std::cout << prefix << "WhileStmtNode" << std::endl;
+        std::cout << prefix << "├── Condition:" << std::endl;
+        printASTNode(n->condition.get(), prefix + "│   ");
         std::cout << prefix << "└── Body:" << std::endl;
         printStatementList(n->body, prefix + "    ");
-    } else if (auto n = dynamic_cast<const SK::ConditionNode*>(node)) {
-        std::cout << prefix << "ConditionNode (Op: " << getOpName(n->op) << ")" << std::endl;
-        std::cout << prefix << "├── Left:" << std::endl;
-        printASTNode(n->left.get(), prefix + "│   ");
-        std::cout << prefix << "└── Right:" << std::endl;
-        printASTNode(n->right.get(), prefix + "    ");
     } else if (auto n = dynamic_cast<const SK::BinOpNode*>(node)) {
         std::cout << prefix << "BinOpNode (Op: " << getOpName(n->op) << ")" << std::endl;
         std::cout << prefix << "├── Left:" << std::endl;
         printASTNode(n->left.get(), prefix + "│   ");
         std::cout << prefix << "└── Right:" << std::endl;
         printASTNode(n->right.get(), prefix + "    ");
-    } else if (auto n = dynamic_cast<const SK::CallNode*>(node)) {
-        std::cout << prefix << "CallNode (Name: " << n->name << ")" << std::endl;
-        std::cout << prefix << "└── Args:" << std::endl;
-        printExpressionList(n->args, prefix + "    ");
     } else if (auto n = dynamic_cast<const SK::IdNode*>(node)) {
         std::cout << prefix << "IdNode (Name: " << n->name << ")" << std::endl;
     } else if (auto n = dynamic_cast<const SK::NumberNode*>(node)) {
